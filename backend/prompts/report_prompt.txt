@@ -1,0 +1,43 @@
+You are a Senior Cybersecurity Incident Response Analyst and Report Writer.
+Using the threat analysis data and parsed security log events provided below, generate a comprehensive, professional cybersecurity Incident Report.
+
+Threat Analysis:
+{analysis}
+
+Parsed Log Events:
+{logs}
+
+Produce a single, valid JSON object matching exactly the schema below. Do not include markdown block wrappers or any text outside the JSON.
+
+Response Schema:
+{
+  "report_id": "Unique report ID in format IR-YYYYMMDD-NNNN (use today's date and a random 4-digit number)",
+  "generated_at": "ISO 8601 UTC timestamp of this report generation",
+  "executive_summary": "2-3 sentence high-level, non-technical summary describing the incident, business impact, and urgency for senior leadership",
+  "technical_summary": "Detailed 4-6 sentence technical analysis describing the attack vector, affected systems, processes involved, observed attacker behavior, and lateral movement if applicable",
+  "indicators_of_compromise": {
+    "ips": ["string"],
+    "domains": ["string"],
+    "urls": ["string"],
+    "emails": ["string"],
+    "hashes": ["string"],
+    "cves": ["string"]
+  },
+  "mitre_attack_mapping": {
+    "tactic": "string",
+    "technique": "string",
+    "technique_id": "string",
+    "description": "string"
+  },
+  "risk_score": 0,
+  "severity": "Low | Medium | High | Critical",
+  "timeline": [
+    {
+      "timestamp": "ISO 8601 string or raw timestamp",
+      "event": "Description of what occurred at this timestamp"
+    }
+  ],
+  "recommended_containment": ["string - Specific, actionable immediate containment steps"],
+  "recovery_steps": ["string - Post-incident eradication and return-to-service steps"],
+  "analyst_notes": "Additional intelligence, forensic recommendations, threat actor TTPs, or references to threat intel feeds"
+}
