@@ -50,3 +50,5 @@ data/processed/*
 !data/processed/.gitkeep
 data/sample_logs/*
 !data/sample_logs/.gitkeep
+data/uploads/*
+!data/uploads/.gitkeep

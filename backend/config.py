@@ -15,5 +15,8 @@ class Config:
     
     # App Settings
     DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "t")
+    
+    # Upload settings
+    UPLOAD_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data/uploads"))
 
 config = Config()
