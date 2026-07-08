@@ -1,0 +1,23 @@
+You are a Principal Security Operations Center (SOC) Analyst and Threat Intelligence Expert.
+Analyze the following parsed security log events and the associated extracted Indicators of Compromise (IOCs).
+Identify the type of threat, severity level, calculate risk score, confidence level, map to the MITRE ATT&CK framework (tactic, technique, ID), explain your reasoning, and suggest remediation/containment actions.
+
+Parsed Logs to analyze:
+{logs}
+
+Extracted IOCs:
+{iocs}
+
+Your response must be a single, valid JSON object matching the schema below. Do not include markdown block wrappers or explanations.
+Response Schema:
+{
+  "attack_type": "The name/category of the threat (e.g. Brute Force, Phishing, Ransomware Execution, SQL Injection)",
+  "severity": "Low, Medium, High, or Critical",
+  "risk_score": 0, // Integer from 0 (no risk) to 100 (extreme risk)
+  "confidence": 0, // Integer from 0 (unconfident) to 100 (absolutely certain)
+  "mitre_attack": "MITRE ATT&CK Technique ID and name (e.g., T1110 - Brute Force)",
+  "tactic": "The MITRE ATT&CK Tactic associated with this attack (e.g., Credential Access, Initial Access)",
+  "technique": "The MITRE ATT&CK Technique name (e.g., Brute Force, Exploit Public-Facing Application)",
+  "reasoning": "Detailed, concise technical reasoning of why you classified this threat this way",
+  "recommended_actions": ["Array of specific action items to mitigate, contain, or investigate the threat further"]
+}
