@@ -4,12 +4,14 @@ from config import config
 
 from routes.upload import upload_bp
 from routes.parser import parser_bp
+from routes.ioc import ioc_bp
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = config.UPLOAD_FOLDER
 
 app.register_blueprint(upload_bp)
 app.register_blueprint(parser_bp)
+app.register_blueprint(ioc_bp)
 
 @app.route('/', methods=['GET'])
 def index():

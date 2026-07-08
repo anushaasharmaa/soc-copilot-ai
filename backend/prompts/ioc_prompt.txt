@@ -1,0 +1,25 @@
+You are an expert Cyber Security Incident Response Analyst.
+Analyze the following list of parsed security logs and extract all Indicators of Compromise (IOCs).
+
+Extract:
+- IPv4 and IPv6 addresses (under "ips")
+- Domains (under "domains")
+- URLs (under "urls")
+- Email addresses (under "emails")
+- File hashes like MD5, SHA1, SHA256 (under "hashes")
+- CVE identifiers like CVE-YYYY-NNNNN (under "cves")
+
+Logs to analyze:
+{logs}
+
+Your output must be a single, valid JSON object matching the schema below.
+Do not include any Markdown formatting like ```json or any explanation before or after the JSON.
+Response Schema:
+{
+  "ips": ["string"],
+  "domains": ["string"],
+  "urls": ["string"],
+  "emails": ["string"],
+  "hashes": ["string"],
+  "cves": ["string"]
+}
