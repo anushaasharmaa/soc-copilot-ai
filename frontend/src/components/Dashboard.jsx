@@ -1,19 +1,33 @@
 import React from 'react';
-import { Shield, AlertTriangle, ShieldAlert, Cpu, Network, FileText, Plus, Radio, Clock, UserCheck } from 'lucide-react';
+import { Shield, AlertTriangle, ShieldAlert, Cpu, Network, FileText, Plus, Radio, Clock, UserCheck, RotateCcw } from 'lucide-react';
+import IncidentReport from './IncidentReport';
 
-export default function Dashboard({ uploadedData, onNavigate }) {
-  // Safe default calculations if no file has been analyzed yet
+export default function Dashboard({ uploadedData, onNavigate, onReset }) {
   const hasData = !!uploadedData;
   const analysis = uploadedData?.threatAnalysis || {};
   const parsedLogs = uploadedData?.parsedLogs || [];
   const iocs = uploadedData?.extractedIocs || { ips: [], domains: [], urls: [], emails: [], hashes: [], cves: [] };
+  const report = uploadedData?.incidentReport || null;
+  const upload = uploadedData?.upload || null;
+  const totalIocs = iocs.ips.length + iocs.domains.length + iocs.urls.length + iocs.emails.length + iocs.hashes.length + iocs.cves.length;
+  const mitreTechniqueId = report?.mitre_attack_mapping?.technique_id || analysis.mitre_attack?.split(' - ')[0] || 'N/A';
+  const mitreTechnique = report?.mitre_attack_mapping?.technique || analysis.technique || 'N/A';
+  const mitreTactic = report?.mitre_attack_mapping?.tactic || analysis.tactic || 'N/A';
+  const mitreDescription = report?.mitre_attack_mapping?.description || 'No MITRE ATT&CK mapping returned yet.';
 
-  // Sample static incidents if no data exists to keep it looking premium
-  const sampleIncidents = [
-    { id: 'INC-1022', timestamp: '10 min ago', title: 'Unauthorized Administrator Logon Attempt', severity: 'High', status: 'Investigating' },
-    { id: 'INC-1021', timestamp: '1 hour ago', title: 'PowerShell Encoded Command Process Spawn', severity: 'Critical', status: 'Mitigated' },
-    { id: 'INC-1020', timestamp: '4 hours ago', title: 'Multi-host ICMP Internal Sweep', severity: 'Medium', status: 'Closed' }
-  ];
+  const incidentFeed = hasData
+    ? (report?.timeline?.length ? report.timeline : parsedLogs.slice(0, 3)).slice(0, 3).map((item, index) => ({
+        id: report?.report_id ? `${report.report_id}-${index + 1}` : `LOG-${index + 1}`,
+        timestamp: item.timestamp || upload?.upload_time || 'N/A',
+        title: item.event || item.message || analysis.attack_type || 'Telemetry event observed',
+        severity: report?.severity || analysis.severity || 'Low',
+        status: index === 0 ? 'Latest' : 'Observed',
+      }))
+    : [
+        { id: 'INC-1022', timestamp: '10 min ago', title: 'Unauthorized Administrator Logon Attempt', severity: 'High', status: 'Investigating' },
+        { id: 'INC-1021', timestamp: '1 hour ago', title: 'PowerShell Encoded Command Process Spawn', severity: 'Critical', status: 'Mitigated' },
+        { id: 'INC-1020', timestamp: '4 hours ago', title: 'Multi-host ICMP Internal Sweep', severity: 'Medium', status: 'Closed' }
+      ];
 
   const getSeverityColor = (sev) => {
     switch (sev?.toLowerCase()) {
@@ -27,32 +41,47 @@ export default function Dashboard({ uploadedData, onNavigate }) {
 
   return (
     <div style={styles.grid}>
-      {/* 1. Header Banner */}
       <div style={styles.spanFull}>
         <div className="card" style={styles.welcomeCard}>
           <div style={styles.welcomeInfo}>
             <Radio size={20} color="#00f2fe" className="animate-blink" />
-            <h2 style={{ margin: 0, fontSize: '18px' }}>ACTIVE SECURITY MONITORING SYSTEM</h2>
-            <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-              LOG ANALYTICS CONSOLE OVERVIEW • CONFIGURED MODELS: GEMINI-2.5-FLASH
-            </p>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '18px' }}>ACTIVE SECURITY MONITORING SYSTEM</h2>
+              <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                LOG ANALYTICS CONSOLE OVERVIEW • CONFIGURED MODELS: GEMINI-2.5-FLASH
+              </p>
+              {hasData && (
+                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
+                  Source: {uploadedData.filename} {upload?.upload_time ? `• Uploaded ${new Date(upload.upload_time).toLocaleString()}` : ''}
+                </p>
+              )}
+            </div>
           </div>
-          <button style={styles.quickUploadBtn} onClick={() => onNavigate('upload')}>
-            <Plus size={16} />
-            <span>INGEST NEW LOG SOURCE</span>
-          </button>
+          <div style={styles.headerActions}>
+            {hasData && (
+              <button style={styles.resetBtn} onClick={onReset}>
+                <RotateCcw size={16} />
+                <span>RESET SESSION</span>
+              </button>
+            )}
+            <button style={styles.quickUploadBtn} onClick={() => onNavigate('upload')}>
+              <Plus size={16} />
+              <span>INGEST NEW LOG SOURCE</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 2. Stats Row */}
+      {/* Full incident report is rendered below when available */}
+
       <div style={styles.spanFull}>
         <div style={styles.statsRow}>
           <div className="card" style={styles.statCard}>
-            <ShieldAlert size={24} color={getSeverityColor(analysis.severity || 'low')} />
+            <ShieldAlert size={24} color={getSeverityColor(report?.severity || analysis.severity || 'low')} />
             <div>
               <span style={styles.statLabel}>THREAT SEVERITY</span>
-              <h3 style={{ ...styles.statVal, color: getSeverityColor(analysis.severity || 'low') }}>
-                {analysis.severity || 'NORMAL'}
+              <h3 style={{ ...styles.statVal, color: getSeverityColor(report?.severity || analysis.severity || 'low') }}>
+                {report?.severity || analysis.severity || 'NORMAL'}
               </h3>
             </div>
           </div>
@@ -60,7 +89,7 @@ export default function Dashboard({ uploadedData, onNavigate }) {
             <AlertTriangle size={24} color="#eab308" />
             <div>
               <span style={styles.statLabel}>AI RISK SCORE</span>
-              <h3 style={styles.statVal}>{hasData ? `${analysis.risk_score || 0}/100` : '0/100'}</h3>
+              <h3 style={styles.statVal}>{hasData ? `${report?.risk_score ?? analysis.risk_score ?? 0}/100` : '0/100'}</h3>
             </div>
           </div>
           <div className="card" style={styles.statCard}>
@@ -74,19 +103,14 @@ export default function Dashboard({ uploadedData, onNavigate }) {
             <Network size={24} color="#00f2fe" />
             <div>
               <span style={styles.statLabel}>EXTRACTED IOCS</span>
-              <h3 style={styles.statVal}>
-                {iocs.ips.length + iocs.domains.length + iocs.urls.length + iocs.hashes.length} UNIQUE
-              </h3>
+              <h3 style={styles.statVal}>{totalIocs} UNIQUE</h3>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 3. Left Column: AI Executive Summary & MITRE ATT&CK */}
       <div style={styles.spanEight}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          {/* AI Threat Analysis Summary */}
           <div className="card">
             <div className="card-title">
               <Cpu size={18} color="#0066ff" />
@@ -96,16 +120,16 @@ export default function Dashboard({ uploadedData, onNavigate }) {
               <div>
                 <div style={styles.threatHeader}>
                   <span style={styles.threatTypeLabel}>DETECTED ATTACK CLASS:</span>
-                  <span style={styles.threatTypeValue}>{analysis.attack_type || 'Unknown'}</span>
+                  <span style={styles.threatTypeValue}>{analysis.attack_type || report?.mitre_attack_mapping?.technique || 'Unknown'}</span>
                 </div>
                 <div style={styles.reasoningBox}>
                   <h4 style={styles.reasoningTitle}>AI Incident Reasoning</h4>
-                  <p style={styles.reasoningText}>{analysis.reasoning}</p>
+                  <p style={styles.reasoningText}>{analysis.reasoning || report?.technical_summary}</p>
                 </div>
                 <div style={styles.actionsBox}>
                   <h4 style={styles.reasoningTitle}>Containment Playbook Guidelines</h4>
                   <ul style={styles.actionsList}>
-                    {analysis.recommended_actions?.map((act, index) => (
+                    {(report?.recommended_containment || analysis.recommended_actions || []).map((act, index) => (
                       <li key={index} style={styles.actionItem}>{act}</li>
                     ))}
                   </ul>
@@ -116,7 +140,7 @@ export default function Dashboard({ uploadedData, onNavigate }) {
                   </button>
                   <button style={styles.reportBtn} onClick={() => onNavigate('report')}>
                     <FileText size={16} />
-                    <span>GENERATE PROFESSIONAL INCIDENT REPORT</span>
+                    <span>OPEN FULL INCIDENT REPORT</span>
                   </button>
                 </div>
               </div>
@@ -128,49 +152,42 @@ export default function Dashboard({ uploadedData, onNavigate }) {
             )}
           </div>
 
-          {/* MITRE ATT&CK Mapping matrix */}
           <div className="card">
             <div className="card-title">
               <Network size={18} color="#00f2fe" />
               <span>MITRE ATT&CK® TACTICAL ALIGNMENT MATRIX</span>
             </div>
-            <div style={styles.mitreGrid}>
-              <div style={{ ...styles.mitreColumn, borderColor: analysis.tactic === 'Initial Access' ? '#0066ff' : '#1e293b' }}>
-                <span style={styles.mitreColTitle}>Initial Access</span>
-                <span style={styles.mitreCellActive}>Drive-by Compromise</span>
-                <span style={styles.mitreCell}>Exploit Public-Facing App</span>
-              </div>
-              <div style={{ ...styles.mitreColumn, borderColor: analysis.tactic === 'Execution' ? '#0066ff' : '#1e293b' }}>
-                <span style={styles.mitreColTitle}>Execution</span>
-                <span style={styles.mitreCell}>Command and Scripting</span>
-                <span style={styles.mitreCellActive}>PowerShell Execution</span>
-              </div>
-              <div style={{ ...styles.mitreColumn, borderColor: analysis.tactic === 'Credential Access' ? '#0066ff' : '#1e293b' }}>
-                <span style={styles.mitreColTitle}>Credential Access</span>
-                <span style={styles.mitreCellActive}>Brute Force Guessing</span>
-                <span style={styles.mitreCell}>OS Credential Dumping</span>
-              </div>
-              <div style={{ ...styles.mitreColumn, borderColor: analysis.tactic === 'Command and Control' ? '#0066ff' : '#1e293b' }}>
-                <span style={styles.mitreColTitle}>Command & Control</span>
-                <span style={styles.mitreCellActive}>Application Layer Protocol</span>
-                <span style={styles.mitreCell}>Web Protocols (HTTP)</span>
-              </div>
-            </div>
-            {hasData && (
-              <div style={styles.mitreSummary}>
-                <span style={styles.mitreHighlight}>Matched Technique:</span>{' '}
-                {analysis.mitre_attack || 'T1110 - Brute Force'} ({analysis.tactic || 'Credential Access'})
+            {hasData ? (
+              <>
+                <div style={styles.mitreDetailsGrid}>
+                  <div style={styles.mitreDetailCard}>
+                    <span style={styles.mitreColTitle}>Tactic</span>
+                    <span style={styles.mitreCellActive}>{mitreTactic}</span>
+                  </div>
+                  <div style={styles.mitreDetailCard}>
+                    <span style={styles.mitreColTitle}>Technique</span>
+                    <span style={styles.mitreCellActive}>{mitreTechnique}</span>
+                  </div>
+                  <div style={styles.mitreDetailCard}>
+                    <span style={styles.mitreColTitle}>Technique ID</span>
+                    <span style={styles.mitreCellActive}>{mitreTechniqueId}</span>
+                  </div>
+                </div>
+                <div style={styles.mitreSummary}>
+                  <span style={styles.mitreHighlight}>Description:</span> {mitreDescription}
+                </div>
+              </>
+            ) : (
+              <div style={styles.emptyState}>
+                <span>No MITRE ATT&CK mapping available yet.</span>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* 4. Right Column: IOC Table & Recent Incidents */}
       <div style={styles.spanFour}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          {/* IOC Table summary */}
           <div className="card">
             <div className="card-title">
               <Shield size={18} color="#ef4444" />
@@ -191,9 +208,7 @@ export default function Dashboard({ uploadedData, onNavigate }) {
 
                 <div style={styles.iocRow}>
                   <span style={styles.iocLabel}>Domains & URLs</span>
-                  <span style={styles.iocBadge}>
-                    {iocs.domains.length + iocs.urls.length} Found
-                  </span>
+                  <span style={styles.iocBadge}>{iocs.domains.length + iocs.urls.length} Found</span>
                 </div>
                 <div style={styles.iocList}>
                   {iocs.domains.slice(0, 2).map((dom, i) => (
@@ -223,14 +238,13 @@ export default function Dashboard({ uploadedData, onNavigate }) {
             )}
           </div>
 
-          {/* Recent Incident Feed */}
           <div className="card">
             <div className="card-title">
               <Clock size={18} color="#64748b" />
               <span>RECENT TELEMETRY INCIDENTS</span>
             </div>
             <div style={styles.incidentList}>
-              {sampleIncidents.map((inc) => (
+              {incidentFeed.map((inc) => (
                 <div key={inc.id} style={styles.incidentItem}>
                   <div style={styles.incidentHeader}>
                     <span style={styles.incId}>{inc.id}</span>
@@ -253,6 +267,18 @@ export default function Dashboard({ uploadedData, onNavigate }) {
           </div>
         </div>
       </div>
+
+      {/* Render full incident report on the dashboard once available */}
+      {report && (
+        <div style={styles.spanFull}>
+          <IncidentReport
+            uploadedData={uploadedData}
+            onReportGenerated={() => {}}
+            onNavigate={onNavigate}
+            onReset={onReset}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -295,6 +321,12 @@ const styles = {
     alignItems: 'center',
     gap: '14px',
   },
+  headerActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    flexWrap: 'wrap',
+  },
   quickUploadBtn: {
     backgroundColor: '#0066ff',
     border: '1px solid rgba(0, 102, 255, 0.5)',
@@ -308,6 +340,19 @@ const styles = {
     gap: '8px',
     cursor: 'pointer',
     boxShadow: '0 4px 12px rgba(0, 102, 255, 0.2)',
+  },
+  resetBtn: {
+    backgroundColor: 'transparent',
+    border: '1px solid #1e293b',
+    borderRadius: '6px',
+    padding: '10px 18px',
+    color: '#94a3b8',
+    fontSize: '13px',
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    cursor: 'pointer',
   },
   statsRow: {
     display: 'grid',
@@ -393,6 +438,39 @@ const styles = {
     color: '#94a3b8',
     lineHeight: '1.7',
   },
+  reportSummaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: '16px',
+    marginBottom: '16px',
+  },
+  reportSummaryPanel: {
+    backgroundColor: '#080c15',
+    border: '1px solid #1e293b',
+    borderRadius: '8px',
+    padding: '16px',
+  },
+  reportPanelLabel: {
+    display: 'block',
+    marginBottom: '10px',
+    fontSize: '12px',
+    color: '#64748b',
+    fontWeight: '700',
+    letterSpacing: '0.5px',
+  },
+  reportPanelText: {
+    margin: 0,
+    fontSize: '13px',
+    color: '#94a3b8',
+    lineHeight: '1.7',
+  },
+  reportList: {
+    margin: 0,
+    paddingLeft: '18px',
+    fontSize: '13px',
+    color: '#94a3b8',
+    lineHeight: '1.7',
+  },
   actionItem: {
     marginBottom: '6px',
   },
@@ -474,6 +552,21 @@ const styles = {
   mitreSummary: {
     fontSize: '13px',
     color: '#94a3b8',
+  },
+  mitreDetailsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: '12px',
+    marginBottom: '16px',
+  },
+  mitreDetailCard: {
+    backgroundColor: '#080c15',
+    border: '1px solid #1e293b',
+    borderRadius: '6px',
+    padding: '12px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
   },
   mitreHighlight: {
     color: '#64748b',

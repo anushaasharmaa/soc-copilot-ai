@@ -11,6 +11,7 @@ export default function App() {
   const [user, setUser] = useState(null); // 'username' when logged in
   const [page, setPage] = useState('dashboard'); // dashboard | upload | analysis | report
   const [uploadedData, setUploadedData] = useState(null); // { filename, parsedLogs, extractedIocs, threatAnalysis, incidentReport }
+  const [notification, setNotification] = useState(null);
 
   const handleLogin = (username) => {
     setUser(username);
@@ -20,11 +21,16 @@ export default function App() {
     setUser(null);
     setPage('dashboard');
     setUploadedData(null);
+    setNotification(null);
   };
 
   const handleUploadSuccess = (data) => {
     setUploadedData(data);
     setPage('dashboard');
+    setNotification({
+      type: 'success',
+      message: `Incident report generated successfully for ${data.filename}.`,
+    });
   };
 
   const handleReportGenerated = (report) => {
@@ -32,6 +38,15 @@ export default function App() {
       ...prev,
       incidentReport: report
     }));
+  };
+
+  const handleResetWorkflow = () => {
+    setUploadedData(null);
+    setPage('dashboard');
+    setNotification({
+      type: 'success',
+      message: 'Dashboard state has been reset.',
+    });
   };
 
   // If not authorized, show Login view
@@ -42,16 +57,17 @@ export default function App() {
   const renderView = () => {
     switch (page) {
       case 'dashboard':
-        return <Dashboard uploadedData={uploadedData} onNavigate={setPage} />;
+        return <Dashboard uploadedData={uploadedData} onNavigate={setPage} onReset={handleResetWorkflow} />;
       case 'upload':
         return <UploadLogs onUploadSuccess={handleUploadSuccess} onNavigate={setPage} />;
       case 'analysis':
-        return <AnalysisResults uploadedData={uploadedData} onNavigate={setPage} />;
+        return <AnalysisResults uploadedData={uploadedData} onNavigate={setPage} onReset={handleResetWorkflow} />;
       case 'report':
         return <IncidentReport 
           uploadedData={uploadedData} 
           onReportGenerated={handleReportGenerated} 
-          onNavigate={setPage} 
+          onNavigate={setPage}
+          onReset={handleResetWorkflow}
         />;
       default:
         return <Dashboard uploadedData={uploadedData} onNavigate={setPage} />;
@@ -117,6 +133,17 @@ export default function App() {
 
       {/* Main View Area */}
       <main className="main-content">
+        {notification && (
+          <div style={{
+            ...styles.notification,
+            ...(notification.type === 'error' ? styles.notificationError : styles.notificationSuccess),
+          }}>
+            <span>{notification.message}</span>
+            <button style={styles.notificationDismiss} onClick={() => setNotification(null)}>
+              DISMISS
+            </button>
+          </div>
+        )}
         {renderView()}
       </main>
     </div>
@@ -150,5 +177,36 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     transition: 'all 0.2s ease',
+  },
+  notification: {
+    marginBottom: '20px',
+    borderRadius: '8px',
+    padding: '14px 16px',
+    fontSize: '13px',
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+  },
+  notificationSuccess: {
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    border: '1px solid rgba(16, 185, 129, 0.25)',
+    color: '#34d399',
+  },
+  notificationError: {
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    border: '1px solid rgba(239, 68, 68, 0.25)',
+    color: '#f87171',
+  },
+  notificationDismiss: {
+    backgroundColor: 'transparent',
+    border: '1px solid rgba(148, 163, 184, 0.2)',
+    borderRadius: '6px',
+    padding: '6px 10px',
+    color: 'inherit',
+    fontSize: '11px',
+    fontWeight: '700',
+    cursor: 'pointer',
   },
 };

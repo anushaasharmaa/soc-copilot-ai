@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileText, AlertCircle, RefreshCw, CheckCircle, ShieldAlert } from 'lucide-react';
-import { parseLogFile, extractIOCs, analyzeThreats } from '../services/api';
+import { runIncidentWorkflow } from '../services/api';
 
 export default function UploadLogs({ onUploadSuccess, onNavigate }) {
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState('idle'); // idle | loading | success | error
   const [progressText, setProgressText] = useState('');
+  const [progressPercent, setProgressPercent] = useState(0);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
 
@@ -15,6 +16,8 @@ export default function UploadLogs({ onUploadSuccess, onNavigate }) {
       setFile(selected);
       setError('');
       setStatus('idle');
+      setProgressText('');
+      setProgressPercent(0);
     }
   };
 
@@ -31,6 +34,8 @@ export default function UploadLogs({ onUploadSuccess, onNavigate }) {
         setFile(selected);
         setError('');
         setStatus('idle');
+        setProgressText('');
+        setProgressPercent(0);
       } else {
         setError('Unsupported file type. Only .txt, .json, and .csv files are permitted.');
       }
@@ -45,51 +50,39 @@ export default function UploadLogs({ onUploadSuccess, onNavigate }) {
     if (!file) return;
     setStatus('loading');
     setError('');
+    setProgressPercent(0);
 
     try {
-      // Step 1: Parsing
-      setProgressText('Uploading and parsing logs...');
-      const parsedLogs = await parseLogFile(file);
-
-      if (!parsedLogs || parsedLogs.length === 0) {
-        throw new Error('Logs were parsed but no events were found.');
-      }
-
-      // Step 2: Extracting IOCs
-      setProgressText('Extracting Indicators of Compromise (IOCs)...');
-      let extractedIocs = { ips: [], domains: [], urls: [], emails: [], hashes: [], cves: [] };
-      try {
-        extractedIocs = await extractIOCs(parsedLogs);
-      } catch (iocErr) {
-        console.warn('IOC Extraction skipped/failed: ', iocErr);
-      }
-
-      // Step 3: Threat Analysis
-      setProgressText('Performing AI Threat Analysis...');
-      let threatAnalysis = null;
-      try {
-        threatAnalysis = await analyzeThreats(parsedLogs, extractedIocs);
-      } catch (analysisErr) {
-        console.warn('Threat analysis skipped/failed: ', analysisErr);
-      }
+      const workflowData = await runIncidentWorkflow(file, ({ message, percent }) => {
+        setProgressText(message);
+        setProgressPercent(percent ?? 0);
+      });
 
       setStatus('success');
-      setProgressText('Logs analyzed successfully!');
+      setProgressText('Incident report generated successfully.');
+      setProgressPercent(100);
 
-      // Save to main app state
       setTimeout(() => {
         onUploadSuccess({
           filename: file.name,
-          parsedLogs,
-          extractedIocs,
-          threatAnalysis,
+          ...workflowData,
         });
       }, 1000);
-
     } catch (err) {
       console.error(err);
       setError(err.message || 'An unexpected error occurred during processing.');
       setStatus('error');
+    }
+  };
+
+  const handleReset = () => {
+    setFile(null);
+    setStatus('idle');
+    setProgressText('');
+    setProgressPercent(0);
+    setError('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -156,8 +149,9 @@ export default function UploadLogs({ onUploadSuccess, onNavigate }) {
             <RefreshCw size={20} className="animate-spin" style={styles.spinIcon} />
             <div style={styles.loaderTextContainer}>
               <span style={styles.loaderText}>{progressText}</span>
+              <span style={styles.progressMeta}>{progressPercent}% complete</span>
               <div style={styles.progressBar}>
-                <div style={styles.progressBarFill} />
+                <div style={{ ...styles.progressBarFill, width: `${progressPercent}%` }} />
               </div>
             </div>
           </div>
@@ -177,6 +171,17 @@ export default function UploadLogs({ onUploadSuccess, onNavigate }) {
             disabled={status === 'loading'}
           >
             RETURN TO DASHBOARD
+          </button>
+          <button
+            style={{
+              ...styles.cancelBtn,
+              opacity: status === 'loading' ? 0.6 : 1,
+              cursor: status === 'loading' ? 'not-allowed' : 'pointer',
+            }}
+            onClick={handleReset}
+            disabled={status === 'loading'}
+          >
+            RESET
           </button>
           <button
             style={{
@@ -298,10 +303,13 @@ const styles = {
   },
   progressBarFill: {
     height: '100%',
-    width: '60%',
     backgroundColor: '#00f2fe',
     borderRadius: '2px',
-    animation: 'pulse 1.5s infinite ease-in-out',
+    transition: 'width 0.25s ease',
+  },
+  progressMeta: {
+    fontSize: '12px',
+    color: '#64748b',
   },
   successBox: {
     marginTop: '20px',

@@ -1,10 +1,18 @@
 import React from 'react';
-import { Cpu, ShieldAlert, Award, FileText, ArrowLeft, Terminal, ShieldAlert as AlertIcon, Clock } from 'lucide-react';
+import { Cpu, Award, FileText, ArrowLeft, Terminal, ShieldAlert as AlertIcon, RotateCcw, Network, ListChecks } from 'lucide-react';
 
-export default function AnalysisResults({ uploadedData, onNavigate }) {
-  const hasData = !!uploadedData;
+export default function AnalysisResults({ uploadedData, onNavigate, onReset }) {
   const analysis = uploadedData?.threatAnalysis || {};
   const parsedLogs = uploadedData?.parsedLogs || [];
+  const iocs = uploadedData?.extractedIocs || { ips: [], domains: [], urls: [], emails: [], hashes: [], cves: [] };
+  const flattenedIocs = [
+    ...iocs.ips.map((value) => ({ type: 'IP', value })),
+    ...iocs.domains.map((value) => ({ type: 'Domain', value })),
+    ...iocs.urls.map((value) => ({ type: 'URL', value })),
+    ...iocs.emails.map((value) => ({ type: 'Email', value })),
+    ...iocs.hashes.map((value) => ({ type: 'Hash', value })),
+    ...iocs.cves.map((value) => ({ type: 'CVE', value })),
+  ];
 
   const getSeverityColor = (sev) => {
     switch (sev?.toLowerCase()) {
@@ -24,6 +32,12 @@ export default function AnalysisResults({ uploadedData, onNavigate }) {
           <ArrowLeft size={16} />
           <span>RETURN TO OPERATIONAL DASHBOARD</span>
         </button>
+        {uploadedData && (
+          <button style={styles.resetBtn} onClick={onReset}>
+            <RotateCcw size={16} />
+            <span>RESET SESSION</span>
+          </button>
+        )}
       </div>
 
       <div style={styles.layout}>
@@ -80,6 +94,25 @@ export default function AnalysisResults({ uploadedData, onNavigate }) {
               </div>
             </div>
           </div>
+
+          <div className="card">
+            <div className="card-title">
+              <Network size={18} color="#00f2fe" />
+              <span>EXTRACTED IOCS</span>
+            </div>
+            <div style={styles.iocList}>
+              {flattenedIocs.length > 0 ? (
+                flattenedIocs.map((ioc, index) => (
+                  <div key={`${ioc.type}-${index}`} style={styles.iocItem}>
+                    <span style={styles.iocType}>{ioc.type}</span>
+                    <code style={styles.code}>{ioc.value}</code>
+                  </div>
+                ))
+              ) : (
+                <div style={styles.emptyConsole}>No IOCs extracted from the uploaded log.</div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Right pane: Narrative logs and playbooks */}
@@ -90,6 +123,22 @@ export default function AnalysisResults({ uploadedData, onNavigate }) {
               <span>AI DETAILED SECURITY REASONING</span>
             </div>
             <p style={styles.reasoningText}>{analysis.reasoning}</p>
+
+            <div style={styles.actionPanel}>
+              <div className="card-title" style={{ marginBottom: '14px' }}>
+                <ListChecks size={18} color="#38bdf8" />
+                <span>RECOMMENDED ACTIONS</span>
+              </div>
+              {analysis.recommended_actions?.length ? (
+                <ul style={styles.actionList}>
+                  {analysis.recommended_actions.map((action, index) => (
+                    <li key={index}>{action}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p style={styles.reasoningText}>No recommended actions were returned by the backend.</p>
+              )}
+            </div>
 
             <div style={styles.reportRedirectBox}>
               <div>
@@ -136,6 +185,8 @@ const styles = {
   },
   backContainer: {
     display: 'flex',
+    gap: '12px',
+    flexWrap: 'wrap',
   },
   backBtn: {
     backgroundColor: 'transparent',
@@ -150,6 +201,19 @@ const styles = {
     gap: '8px',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
+  },
+  resetBtn: {
+    backgroundColor: 'transparent',
+    border: '1px solid #1e293b',
+    borderRadius: '6px',
+    padding: '8px 16px',
+    color: '#94a3b8',
+    fontSize: '13px',
+    fontWeight: '600',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    cursor: 'pointer',
   },
   layout: {
     display: 'flex',
@@ -246,6 +310,20 @@ const styles = {
     lineHeight: '1.7',
     margin: '0 0 24px 0',
   },
+  actionPanel: {
+    backgroundColor: '#080c15',
+    border: '1px solid #1e293b',
+    borderRadius: '8px',
+    padding: '16px',
+    marginBottom: '24px',
+  },
+  actionList: {
+    margin: 0,
+    paddingLeft: '18px',
+    fontSize: '13px',
+    color: '#94a3b8',
+    lineHeight: '1.7',
+  },
   reportRedirectBox: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -295,6 +373,26 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '8px',
+  },
+  iocList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+  },
+  iocItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    backgroundColor: '#070913',
+    border: '1px solid #1e293b',
+    borderRadius: '8px',
+    padding: '12px',
+  },
+  iocType: {
+    fontSize: '11px',
+    color: '#64748b',
+    fontWeight: '700',
+    letterSpacing: '0.5px',
   },
   consoleLine: {
     display: 'flex',

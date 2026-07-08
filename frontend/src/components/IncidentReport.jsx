@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { FileText, ArrowLeft, Printer, RefreshCw, AlertTriangle, ShieldCheck, CheckSquare, Square } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ArrowLeft, Printer, RefreshCw, AlertTriangle, ShieldCheck, Square, RotateCcw } from 'lucide-react';
 import { generateReport } from '../services/api';
 
-export default function IncidentReport({ uploadedData, onReportGenerated, onNavigate }) {
+export default function IncidentReport({ uploadedData, onReportGenerated, onNavigate, onReset }) {
   const [report, setReport] = useState(uploadedData?.incidentReport || null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -11,13 +11,10 @@ export default function IncidentReport({ uploadedData, onReportGenerated, onNavi
   const [containmentStatus, setContainmentStatus] = useState({});
 
   useEffect(() => {
-    // If we have uploaded logs & analysis but no report yet, generate it!
-    if (uploadedData && uploadedData.threatAnalysis && !report) {
-      triggerReportGeneration();
-    }
-  }, [uploadedData, report]);
+    setReport(uploadedData?.incidentReport || null);
+  }, [uploadedData?.incidentReport]);
 
-  const triggerReportGeneration = async () => {
+  const triggerReportGeneration = useCallback(async () => {
     setIsLoading(true);
     setError('');
     try {
@@ -33,7 +30,13 @@ export default function IncidentReport({ uploadedData, onReportGenerated, onNavi
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [uploadedData, onReportGenerated]);
+
+  useEffect(() => {
+    if (uploadedData && uploadedData.threatAnalysis && !uploadedData.incidentReport && !report) {
+      triggerReportGeneration();
+    }
+  }, [uploadedData, report, triggerReportGeneration]);
 
   const toggleContainmentStep = (idx) => {
     setContainmentStatus(prev => ({
@@ -114,10 +117,16 @@ export default function IncidentReport({ uploadedData, onReportGenerated, onNavi
     <div style={styles.container}>
       {/* Control Banner - hidden during printing */}
       <div style={styles.controlBanner} className="no-print">
-        <button style={styles.backBtn} onClick={() => onNavigate('dashboard')}>
-          <ArrowLeft size={16} />
-          <span>RETURN TO DASHBOARD</span>
-        </button>
+        <div style={styles.controlActions}>
+          <button style={styles.backBtn} onClick={() => onNavigate('dashboard')}>
+            <ArrowLeft size={16} />
+            <span>RETURN TO DASHBOARD</span>
+          </button>
+          <button style={styles.backBtn} onClick={onReset}>
+            <RotateCcw size={16} />
+            <span>RESET SESSION</span>
+          </button>
+        </div>
         <button style={styles.printBtn} onClick={handlePrint}>
           <Printer size={16} />
           <span>PRINT / SAVE AS PDF</span>
@@ -278,7 +287,7 @@ export default function IncidentReport({ uploadedData, onReportGenerated, onNavi
         </div>
 
         {/* Analyst Comments */}
-        <div style={styles.reportSection} style={{ borderBottom: 'none' }}>
+        <div style={{ ...styles.reportSection, borderBottom: 'none' }}>
           <h3 style={styles.sectionHeader}>8. THREAT INTEL & FORENSIC NOTES</h3>
           <p style={styles.summaryText}>{report.analyst_notes}</p>
         </div>
@@ -331,6 +340,11 @@ const styles = {
     border: '1px solid #1e293b',
     borderRadius: '8px',
     padding: '12px 20px',
+  },
+  controlActions: {
+    display: 'flex',
+    gap: '12px',
+    flexWrap: 'wrap',
   },
   backBtn: {
     backgroundColor: 'transparent',

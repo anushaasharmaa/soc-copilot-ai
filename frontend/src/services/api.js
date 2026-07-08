@@ -3,21 +3,42 @@
  * Uses the local Vite proxy configuration (/api/* redirects to http://127.0.0.1:5001/*).
  */
 
-export async function uploadLogFile(file) {
+export async function uploadLogFile(file, onUploadProgress) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch('/api/upload', {
-    method: 'POST',
-    body: formData,
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload');
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && typeof onUploadProgress === 'function') {
+        const percent = Math.round((event.loaded / event.total) * 100);
+        onUploadProgress(percent);
+      }
+    };
+
+    xhr.onload = async () => {
+      let responseData = {};
+      try {
+        responseData = JSON.parse(xhr.responseText || '{}');
+      } catch {
+        responseData = {};
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(responseData);
+      } else {
+        reject(new Error(responseData.error || `Upload failed with status ${xhr.status}`));
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error('Upload failed due to a network error.'));
+    };
+
+    xhr.send(formData);
   });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `Upload failed with status ${response.status}`);
-  }
-
-  return response.json();
 }
 
 export async function parseLogFile(file) {
@@ -100,4 +121,41 @@ export async function generateReport(analysis, parsedLogs = null) {
   }
 
   return response.json();
+}
+
+export async function runIncidentWorkflow(file, onProgress) {
+  const notifyProgress = (message, percent) => {
+    if (typeof onProgress === 'function') {
+      onProgress({ message, percent });
+    }
+  };
+
+  notifyProgress('Uploading security log...', 5);
+  const upload = await uploadLogFile(file, (uploadPercent) => {
+    notifyProgress(`Uploading security log... ${uploadPercent}%`, Math.max(5, Math.min(25, Math.round(uploadPercent * 0.25))));
+  });
+
+  notifyProgress('Upload complete. Parsing uploaded log events...', 35);
+  const parsedLogs = await parseLogFile(file);
+  if (!Array.isArray(parsedLogs) || parsedLogs.length === 0) {
+    throw new Error('Logs were parsed but no events were found.');
+  }
+
+  notifyProgress('Extracting indicators of compromise...', 55);
+  const extractedIocs = await extractIOCs(parsedLogs);
+
+  notifyProgress('Running AI threat analysis...', 75);
+  const threatAnalysis = await analyzeThreats(parsedLogs, extractedIocs);
+
+  notifyProgress('Generating incident report...', 90);
+  const incidentReport = await generateReport(threatAnalysis, parsedLogs);
+  notifyProgress('Incident report ready.', 100);
+
+  return {
+    upload,
+    parsedLogs,
+    extractedIocs,
+    threatAnalysis,
+    incidentReport,
+  };
 }
