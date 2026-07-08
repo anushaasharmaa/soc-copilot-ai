@@ -40,9 +40,9 @@ def extract_iocs_from_logs(parsed_logs: list[dict]) -> dict:
         # Format the prompt with logs JSON
         formatted_prompt = prompt_template.replace("{logs}", json.dumps(parsed_logs, indent=2))
         
-        # Configure model (Gemini 1.5 Flash supports structured JSON mode)
+        # Configure model (Gemini 2.5 Flash supports structured JSON mode)
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-2.5-flash",
             generation_config={"response_mime_type": "application/json"}
         )
         
