@@ -6,7 +6,7 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../.env"))
 load_dotenv()
 
 class Config:
-    PORT = int(os.getenv("PORT", 5000))
+    PORT = int(os.getenv("PORT", 5001))
     HOST = os.getenv("HOST", "0.0.0.0")
     
     # AI Config
