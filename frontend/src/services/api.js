@@ -1,7 +1,10 @@
 /**
  * API Service for communicating with the SOC Copilot Flask backend.
- * Uses the local Vite proxy configuration (/api/* redirects to http://127.0.0.1:5001/*).
+ * In development, uses the Vite proxy (/api/* → http://127.0.0.1:5001/*).
+ * In production (Vercel), uses the VITE_API_URL environment variable pointing to the Render backend.
  */
+
+const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export async function uploadLogFile(file, onUploadProgress) {
   const formData = new FormData();
@@ -9,7 +12,7 @@ export async function uploadLogFile(file, onUploadProgress) {
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/upload');
+    xhr.open('POST', `${BASE_URL}/api/upload`);
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && typeof onUploadProgress === 'function') {
@@ -45,7 +48,7 @@ export async function parseLogFile(file) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch('/api/parse', {
+  const response = await fetch(`${BASE_URL}/api/parse`, {
     method: 'POST',
     body: formData,
   });
@@ -59,7 +62,7 @@ export async function parseLogFile(file) {
 }
 
 export async function extractIOCs(parsedLogs) {
-  const response = await fetch('/api/ioc', {
+  const response = await fetch(`${BASE_URL}/api/ioc`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -83,7 +86,7 @@ export async function analyzeThreats(parsedLogs, iocs = null) {
     payload.iocs = iocs;
   }
 
-  const response = await fetch('/api/analyze', {
+  const response = await fetch(`${BASE_URL}/api/analyze`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -107,7 +110,7 @@ export async function generateReport(analysis, parsedLogs = null) {
     payload.logs = parsedLogs;
   }
 
-  const response = await fetch('/api/report', {
+  const response = await fetch(`${BASE_URL}/api/report`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
