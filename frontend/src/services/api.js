@@ -1,10 +1,12 @@
 /**
  * API Service for communicating with the SOC Copilot Flask backend.
  * In development, uses the Vite proxy (/api/* → http://127.0.0.1:5001/*).
- * In production (Vercel), uses the VITE_API_URL environment variable pointing to the Render backend.
+ * In production (Vercel), uses VITE_API_URL pointing directly to the Render backend.
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || '';
+// In dev: VITE_API_URL is undefined → use /api (Vite proxy strips /api before hitting Flask).
+// In prod: VITE_API_URL = Render URL → Flask routes are at /upload, /parse, etc. (no /api prefix).
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 export async function uploadLogFile(file, onUploadProgress) {
   const formData = new FormData();
@@ -12,7 +14,7 @@ export async function uploadLogFile(file, onUploadProgress) {
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${BASE_URL}/api/upload`);
+    xhr.open('POST', `${API_BASE}/upload`);
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && typeof onUploadProgress === 'function') {
@@ -48,7 +50,7 @@ export async function parseLogFile(file) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(`${BASE_URL}/api/parse`, {
+  const response = await fetch(`${API_BASE}/parse`, {
     method: 'POST',
     body: formData,
   });
@@ -62,7 +64,7 @@ export async function parseLogFile(file) {
 }
 
 export async function extractIOCs(parsedLogs) {
-  const response = await fetch(`${BASE_URL}/api/ioc`, {
+  const response = await fetch(`${API_BASE}/ioc`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -86,7 +88,7 @@ export async function analyzeThreats(parsedLogs, iocs = null) {
     payload.iocs = iocs;
   }
 
-  const response = await fetch(`${BASE_URL}/api/analyze`, {
+  const response = await fetch(`${API_BASE}/analyze`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -110,7 +112,7 @@ export async function generateReport(analysis, parsedLogs = null) {
     payload.logs = parsedLogs;
   }
 
-  const response = await fetch(`${BASE_URL}/api/report`, {
+  const response = await fetch(`${API_BASE}/report`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
