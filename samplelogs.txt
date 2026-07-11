@@ -1,0 +1,39 @@
+2026-07-08 09:00:01 INFO Host=WEB-SRV01 Service=Apache User=- Event=Server Started
+2026-07-08 09:01:14 INFO Host=WEB-SRV01 SrcIP=192.168.1.45 User=jdoe Event=Successful Login
+2026-07-08 09:03:42 INFO Host=DB-SRV01 Backup=Daily Status=Completed
+2026-07-08 09:05:11 WARNING Host=WEB-SRV01 SrcIP=203.0.113.45 User=admin Event=Failed Login
+2026-07-08 09:05:14 WARNING Host=WEB-SRV01 SrcIP=203.0.113.45 User=admin Event=Failed Login
+2026-07-08 09:05:17 WARNING Host=WEB-SRV01 SrcIP=203.0.113.45 User=admin Event=Failed Login
+2026-07-08 09:05:20 WARNING Host=WEB-SRV01 SrcIP=203.0.113.45 User=admin Event=Failed Login
+2026-07-08 09:05:23 WARNING Host=WEB-SRV01 SrcIP=203.0.113.45 User=admin Event=Failed Login
+2026-07-08 09:05:30 ALERT Host=WEB-SRV01 Event=Brute Force Suspected SrcIP=203.0.113.45 Severity=High
+2026-07-08 09:06:10 INFO Firewall Action=Blocked SrcIP=203.0.113.45 DstPort=22
+2026-07-08 09:07:18 INFO Host=MAIL-SRV01 User=alice Event=Mailbox Login
+2026-07-08 09:08:02 INFO Host=VPN-GW01 User=bob VPN=Connected SrcIP=198.51.100.27
+2026-07-08 09:09:41 WARNING Host=HR-PC07 Event=PowerShell Execution User=alice Command="powershell.exe -EncodedCommand SQBFAFgA"
+2026-07-08 09:09:56 ALERT Host=HR-PC07 Event=Suspicious PowerShell Activity Severity=Critical
+2026-07-08 09:10:18 INFO Defender Host=HR-PC07 Scan=Started
+2026-07-08 09:10:42 ERROR Defender Host=HR-PC07 MalwareDetected=Trojan.Generic Severity=High
+2026-07-08 09:10:45 INFO Defender Host=HR-PC07 Action=Quarantined File=C:\Users\alice\Downloads\invoice.exe
+2026-07-08 09:11:30 INFO DNS Query=login.microsoftonline.com Status=Allowed
+2026-07-08 09:12:07 WARNING DNS Query=evil-command-control.example Status=Resolved
+2026-07-08 09:12:15 ALERT Host=HR-PC07 OutboundConnection=185.220.101.15 Port=443 Severity=Critical
+2026-07-08 09:12:28 INFO Firewall Action=Allowed SrcIP=192.168.1.77 DstIP=185.220.101.15 Port=443
+2026-07-08 09:13:55 WARNING Host=DC01 User=svc_backup Event=Privilege Escalation Requested
+2026-07-08 09:14:03 ALERT Host=DC01 Event=Unauthorized Privilege Escalation User=svc_backup
+2026-07-08 09:15:42 INFO IDS Signature=ET SCAN Nmap Scan SrcIP=45.83.91.11
+2026-07-08 09:15:45 WARNING IDS Signature=ET SCAN Multiple Ports SrcIP=45.83.91.11
+2026-07-08 09:16:00 INFO Firewall Action=Blocked SrcIP=45.83.91.11
+2026-07-08 09:17:25 INFO Host=FILE-SRV02 User=charlie Event=File Access File=Payroll.xlsx
+2026-07-08 09:18:11 WARNING Host=FILE-SRV02 User=charlie Event=Mass File Copy
+2026-07-08 09:18:47 ALERT DLP Host=FILE-SRV02 SensitiveDataTransfer=True
+2026-07-08 09:19:12 INFO Email Gateway Sender=unknown@evilmail.com Attachment=invoice.zip
+2026-07-08 09:19:18 WARNING Email Gateway AttachmentDetected=invoice.zip
+2026-07-08 09:19:24 ALERT Sandbox Verdict=Malicious SHA256=8f4d5b3ac0fcb1d1ab3f6d89a51d9b5d6d52f6a3c1f4c84b2e8e7b9c5d1a3f21
+2026-07-08 09:20:00 INFO EDR Host=HR-PC07 Isolation=Enabled
+2026-07-08 09:20:37 INFO SOC Analyst=Tier1 IncidentID=INC-1042 Status=Investigating
+2026-07-08 09:21:15 INFO Firewall Action=Blocked DstDomain=evil-command-control.example
+2026-07-08 09:22:03 INFO User=alice PasswordReset=Completed
+2026-07-08 09:22:45 INFO Host=HR-PC07 MalwareScan=Completed ThreatsRemoved=1
+2026-07-08 09:23:18 INFO Incident=INC-1042 Severity=High Status=Contained
+2026-07-08 09:24:30 INFO SOC Event=Case Closed Analyst=Tier2
